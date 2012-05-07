@@ -25,8 +25,19 @@ def playGame():
             [randint(0,SCREENSIZE[0]), randint(0,SCREENSIZE[1])])
     python.update(game_surface)
    
+    # create the bad snake
+    rattle = snake(pygame.Color('grey'), 
+            [randint(0,SCREENSIZE[0]), randint(0,SCREENSIZE[1])])
+    rattle.update(game_surface)
+    rattle_num_frames_in_dir = 0
+    rattle_max_frames_in_dir = 50
+    rattle_dir = arrow_keys[randint(0,3)]
+
     # create some food
-    food_items = [food(game_surface)]
+    food_items = []
+    def create_food():
+        while len(food_items) < 2:
+            food_items.append(food(game_surface))
 
     game_clock = pygame.time.Clock()
     playing = True
@@ -46,12 +57,45 @@ def playGame():
                 if e.key in arrow_keys:
                     python.move(e.key,game_surface)
 
+        # always move the bad snake
+        rattle_num_frames_in_dir = rattle_num_frames_in_dir + 1
+        moved_rattle = rattle_num_frames_in_dir % 2 == 0
+        while not moved_rattle:
+            if rattle_num_frames_in_dir > rattle_max_frames_in_dir:
+                curr_dir = rattle_dir
+                while curr_dir == rattle_dir:
+                    rattle_dir = arrow_keys[randint(0,3)]
+                rattle_max_frames_in_dir = randint(25,50)
+                rattle_num_frames_in_dir = 0
+            moved_rattle = rattle.move(rattle_dir,game_surface)
+            if not moved_rattle:
+                rattle_num_frames_in_dir = rattle_max_frames_in_dir+1
+
+        # check to see if we collided with ourself, or the bad guy
+        p_rects = python.get_rects()
+        r_rects = rattle.get_rects()
+        for x in range(len(p_rects)):
+            self_collide = False
+            for y in range(len(p_rects)):
+                if x == y:
+                    continue 
+                if p_rects[x].inflate(-1,-1).colliderect(p_rects[y].inflate(-1,-1)):
+                    self_collide = True
+            rattle_collide = p_rects[x].collidelist(rattle.get_rects()) > -1
+            if (self_collide or rattle_collide):
+                print ("GAME OVER")
+                playing = False
+
+        # eat
         python.try_eat(food_items)
-        if (len(food_items) < 1):
-            food_items.append(food(game_surface))
+        rattle.try_eat(food_items)
+        
+        # replace food
+        create_food()
 
         # update display & objects
         python.update(game_surface)
+        rattle.update(game_surface)
         for f in food_items:
             f.update(game_surface)
         pygame.display.update()

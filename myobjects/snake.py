@@ -24,6 +24,18 @@ class snake:
         segment.scroll(pos[0], pos[1])
         self._segments.append({'surface':segment,'pos':pos})
 
+    def get_rects(self):
+        """ returns the current rectangles for the snake """
+        head_rect = self._head['surface'].get_rect()
+        head_rect.move_ip(self._head['pos'])
+        rects = [head_rect]
+
+        for segment in self._segments:
+            rect = segment['surface'].get_rect()
+            rect.move_ip(segment['pos'])
+            rects.append(rect)
+        return rects
+
     def update(self, game_surface):
         """ Draws the snake onto the given surface """
         head_rect = self._head['surface'].get_rect()
@@ -40,30 +52,36 @@ class snake:
 
         game_rect = game_surface.get_rect()
 
-        prev_segment_pos = self._head['pos'][:]
-
         # set the head position based on the key press
+        head_pos = self._head['pos'][:]
         if (key == pygame.K_UP):
-            self._head['pos'][1] = self._head['pos'][1] - 30
+            head_pos[1] = head_pos[1] - 30
         elif (key == pygame.K_DOWN):
-            self._head['pos'][1] = self._head['pos'][1] + 30
+            head_pos[1] = head_pos[1] + 30
         elif (key == pygame.K_LEFT):
-            self._head['pos'][0] = self._head['pos'][0] - 30
+            head_pos[0] = head_pos[0] - 30
         elif (key == pygame.K_RIGHT):
-            self._head['pos'][0] = self._head['pos'][0] + 30
+            head_pos[0] = head_pos[0] + 30
         else:
             return
+
 
         # make sure we don't go out of bounds
         head_rect = self._head['surface'].get_rect()
         max_x = game_rect.right - head_rect.width
         max_y = game_rect.bottom - head_rect.height
-        position = [0 if self._head['pos'][0] < 0 else min(self._head['pos'][0], max_x),
-                    0 if self._head['pos'][1] < 0 else min(self._head['pos'][1], max_y)] 
+        if (head_pos[0] < 0 or head_pos[0] > max_x or
+            head_pos[1] < 0 or head_pos[1] > max_y):
+            return False
+
+        # we're okay, now actually set the head position (not not before saving the pos)
+        prev_segment_pos = self._head['pos'][:]
+        self._head['pos'] = head_pos[:]
 
         # draw the head onto the surface
-        head_rect.move_ip(position)
+        head_rect.move_ip(self._head['pos'])
         game_surface.blit(self._head['surface'], head_rect)
+
 
         # update all the body segments to be in the position of its previous segment
         for segment in self._segments:
@@ -75,6 +93,8 @@ class snake:
             rect.move_ip(segment['pos'])
             game_surface.blit(segment['surface'], rect)
             prev_segment_pos = saved_pos
+        
+        return True
 
 
     def try_eat(self, food_items):
