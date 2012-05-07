@@ -1,9 +1,11 @@
 import pygame
+from random import randint
 from myobjects.snake import snake
+from myobjects.food import food
 
 # Settings
 SCREENSIZE = (1024,768)
-BGCOLOR = (0x5e, 0x00, 0xaa)
+BGCOLOR = (0xff, 0xa5, 0x00)
 FRAMERATE = 30
 
 def playGame():
@@ -19,8 +21,13 @@ def playGame():
     pygame.key.set_repeat(10, 25)
 
     # create our snake
-    python = snake(pygame.Color('white'))
+    python = snake(pygame.Color('purple'), 
+            [randint(0,SCREENSIZE[0]), randint(0,SCREENSIZE[1])])
     python.update(game_surface)
+   
+    # create some food
+    food_items = [food(game_surface)]
+
     game_clock = pygame.time.Clock()
     playing = True
     while playing:
@@ -39,8 +46,14 @@ def playGame():
                 if e.key in arrow_keys:
                     python.move(e.key,game_surface)
 
+        python.try_eat(food_items)
+        if (len(food_items) < 1):
+            food_items.append(food(game_surface))
+
         # update display & objects
         python.update(game_surface)
+        for f in food_items:
+            f.update(game_surface)
         pygame.display.update()
 
 if __name__ == '__main__':
